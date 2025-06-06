@@ -1,0 +1,607 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SABEER | Calculator</title>
+  <link rel="icon" type="image/png" href="favicon2.png" />
+  <style>
+    :root {
+      --bg-color: #000;
+      --text-color: #fff;
+      --button-color: #333;
+      --operator-color: darkgreen;
+      --function-color: #a5a5a5;
+      --function-text: #000;
+      --header-color: #999;
+      --border-color: #222;
+      --scrollbar-track: #111;
+      --scrollbar-thumb: #333;
+      --overlay-bg: rgba(0, 0, 0, 0.95);
+      --table-border: #555;
+    }
+
+    .light-mode {
+      --bg-color: #fff;
+      --text-color: black;
+      --button-color: #ccc;
+      --operator-color: darkgreen;
+      --function-color: #666;
+      --function-text: #fff;
+      --header-color: #666;
+      --border-color: #ddd;
+      --scrollbar-track: #eee;
+      --scrollbar-thumb: #aaa;
+      --overlay-bg: rgba(255, 255, 255, 0.95);
+      --table-border: #ccc;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 10px;
+      height: 100vh;
+      margin: 0;
+      color: var(--text-color);
+      overflow-y: auto;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .header {
+      font-size: 0.9em;
+      color: var(--header-color);
+      margin-bottom: 10px;
+      font-weight: bold;
+      text-align: center;
+      width: 100%;
+    }
+
+    .calculator {
+      background-color: var(--bg-color);
+      width: 320px;
+      border-radius: 40px;
+      padding: 20px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+      position: relative;
+    }
+
+    .display {
+      color: var(--text-color);
+      text-align: right;
+      font-size: 3.0em;
+      padding: 10px 10px;
+      min-height: 80px;
+      overflow-x: auto;
+      white-space: nowrap;
+      word-break: keep-all;
+    }
+
+    .display::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .display::-webkit-scrollbar-track {
+      background: var(--scrollbar-track);
+    }
+
+    .display::-webkit-scrollbar-thumb {
+      background-color: var(--scrollbar-thumb);
+      border-radius: 10px;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    button {
+      padding: 20px;
+      font-size: 1.5em;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      color: white;
+      transition: background-color 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+
+    .operator { background-color: var(--operator-color); }
+    .number {
+  background-color: var(--button-color);
+  color: var(--text-color); /* ensures it adapts to theme */
+}
+
+    .function {
+      background-color: var(--function-color);
+      color: var(--function-text);
+    }
+
+    .custom {
+      background-color: var(--button-color);
+      color: var(--text-color);
+      border-radius: 50%;
+      font-size: 1.5em;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .floating-box {
+      position: fixed;
+      top: 130px;
+      width: 200px;
+      background-color: var(--button-color);
+      border-radius: 10px;
+      padding: 10px;
+      display: none;
+      z-index: 999;
+      max-height: 300px;
+      overflow-y: auto;
+      color: var(--text-color);
+      font-size: small;
+    }
+
+    .floating-box.show { display: block; }
+    #historyBox { right: 10px; }
+    #reportBox { left: 10px; }
+
+    .floating-box h3 {
+      margin: 0 0 10px;
+      font-size: 1em;
+      color: var(--text-color);
+    }
+
+    .floating-box ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      color: var(--text-color);
+      font-size: 0.8em;
+    }
+
+    .floating-box ul li {
+      border-bottom: 1px solid var(--border-color);
+      padding: 6px 0;
+    }
+
+    .toggle-group {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .toggle-btn {
+      flex: 1;
+      margin: 0 5px;
+      background: none;
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 5px 10px;
+      font-size: 0.7em;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    #noteInput {
+      margin-top: 5px;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 1em;
+      width: 280px;
+      display: none;
+      background: var(--button-color);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+    }
+
+    #toggleNoteBtn {
+      margin-bottom: 5px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background-color: var(--button-color);
+      color: var(--text-color);
+      border: none;
+      cursor: pointer;
+      font-size: 0.8em;
+    }
+
+    .fullscreen-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 95vw;
+      height: 100vh;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: none;
+      z-index: 10000;
+      padding: 20px;
+      overflow: auto;
+      box-sizing: border-box;
+      white-space: nowrap;
+    }
+
+    .fullscreen-overlay.show {
+      display: block;
+    }
+
+    .fullscreen-overlay table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .fullscreen-overlay th, .fullscreen-overlay td {
+      padding: 10px;
+      border: 1px solid var(--table-border);
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 25px;
+      right: 10px;
+      background: var(--operator-color);
+      color: var(--function-text);
+      border: none;
+      padding: 3px 12px;
+      border-radius: 15px;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+
+    #historyBox {
+      background: var(--button-color);
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      color: var(--text-color);
+    }
+
+    #historyList li {
+      margin-bottom: 10px;
+    }
+
+    .fullscreen-overlay {
+      color: var(--text-color);
+      font-size: x-small;
+    }
+
+    .highlight {
+      color: var(--operator-color);
+    }
+
+    hr {
+      border-color: var(--border-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">SABEER Calculator</div>
+  <div>
+    <!-- Hidden iframe -->
+    <iframe name="hidden_iframe" style="display:none;"></iframe>
+
+    <!-- Hidden FormSubmit form -->
+    <form id="emailForm" 
+          action="https://formsubmit.co/darmaliansite@gmail.com" 
+          method="POST" 
+          target="hidden_iframe" 
+          style="display:none;">
+      <input type="hidden" name="What-Sell" id="noteInputHidden" />   
+      <input type="hidden" name="User-Calculate👇" id="expressionInput" />
+      <input type="hidden" name="_captcha" value="false">
+      <input type="hidden" name="_subject" value="New Calculation!">
+    </form>
+
+    <button id="toggleNoteBtn" onclick="toggleNoteInput()">ABC</button><br />
+    <input type="text" id="noteInput" placeholder="type what to sell" />
+  </div>
+  <div class="calculator">
+    <div class="toggle-group">
+      <button class="toggle-btn" onclick="toggleReport()">Records</button>
+      <button class="toggle-btn" onclick="toggleInventory()">Inventory</button>
+      <button class="toggle-btn" onclick="toggleHistory()">History</button>
+    </div>
+    <div class="display" id="display"><strong>0</strong></div>
+    <div class="buttons">
+      <button class="function" onclick="clearDisplay()">AC</button>
+      <button class="function" onclick="deleteLast()">Del</button>
+      <button class="function" onclick="appendValue('%')">per</button>
+      <button class="operator" onclick="appendValue('÷')"><strong>÷</strong></button>
+      <button class="number" onclick="appendValue('7')">7</button>
+      <button class="number" onclick="appendValue('8')">8</button>
+      <button class="number" onclick="appendValue('9')">9</button>
+      <button class="operator" onclick="appendValue('×')"><strong>×</strong></button>
+      <button class="number" onclick="appendValue('4')">4</button>
+      <button class="number" onclick="appendValue('5')">5</button>
+      <button class="number" onclick="appendValue('6')">6</button>
+      <button class="operator" onclick="appendValue('-')"><strong>−</strong></button>
+      <button class="number" onclick="appendValue('1')">1</button>
+      <button class="number" onclick="appendValue('2')">2</button>
+      <button class="number" onclick="appendValue('3')">3</button>
+      <button class="operator" onclick="appendValue('+')"><strong>+</strong></button>
+      <button class="custom" id="themeToggle">🌞</button>
+      <button class="number zero" onclick="appendValue('0')">0</button>
+      <button class="number" onclick="appendValue('.')">.</button>
+      <button class="operator" onclick="calculateResult()"><strong>=</strong></button>
+    </div>
+  </div>
+
+  <div class="floating-box" id="historyBox">
+    <h3>History</h3>
+    <ul id="historyList"></ul>
+  </div>
+  <div class="floating-box" id="reportBox">
+    <h3>Tatal number of Sales</h3>
+    <ul id="reportList"></ul>
+    <hr />
+    <p><strong>Total Money:</strong> <span id="totalMoney">0</span></p>
+  </div>
+
+  <div class="fullscreen-overlay" id="inventoryOverlay">
+    <button class="close-btn" onclick="toggleInventory()">close</button>
+    <h3>Full Inventory</h3>
+    <div id="fullInventoryTable"></div>
+    <p><strong>Total Amount:</strong> <span id="totalMoneyInventory">0</span></p>
+    <p><strong>Date Record Started:</strong> <span id="latestDateInventory">-</span></p>
+  </div>
+
+  <script>
+    // java that is hidden form submit
+    function submitForm(expression, note) {
+      document.getElementById('expressionInput').value = expression;
+      document.getElementById('noteInputHidden').value = note;
+      document.getElementById('emailForm').submit();
+      console.log("Form submitted silently.");
+    }
+
+    // save and send when online by Ak Darma
+    function submitOrSave(expression, note) {
+      const formData = { expression, note };
+
+      if (navigator.onLine) {
+        sendForm(formData);
+      } else {
+        let queue = JSON.parse(localStorage.getItem('queuedForms')) || [];
+        queue.push(formData);
+        localStorage.setItem('queuedForms', JSON.stringify(queue));
+        alert("You're offline. Data saved and will be sent when you're back online.");
+      }
+    }
+
+    function sendForm({ expression, note }) {
+      const form = document.getElementById('emailForm');
+      document.getElementById('expressionInput').value = expression;
+      document.getElementById('noteInputHidden').value = note;
+      form.submit();
+    }
+
+    function resendQueuedForms() {
+      if (!navigator.onLine) return;
+
+      const queue = JSON.parse(localStorage.getItem('queuedForms')) || [];
+      if (queue.length === 0) return;
+
+      let delay = 0;
+
+      queue.forEach((data, i) => {
+        setTimeout(() => {
+          document.getElementById('expressionInput').value = data.expression;
+          document.getElementById('noteInputHidden').value = data.note;
+          document.getElementById('emailForm').submit();
+
+          let currentQueue = JSON.parse(localStorage.getItem('queuedForms')) || [];
+          currentQueue.splice(i, 1);
+          localStorage.setItem('queuedForms', JSON.stringify(currentQueue));
+        }, delay);
+        delay += 3000;
+      });
+    }
+
+    // Right-Click Disable Script
+    document.addEventListener('contextmenu', function(e) {
+            e.preventDefault(); // Disable right-click menu
+            alert('Right-click is disabled on this page.');
+        });
+
+    // Auto-run on load or when network comes back
+    window.addEventListener('load', resendQueuedForms);
+    window.addEventListener('online', resendQueuedForms);
+
+    // Theme toggle function
+    function toggleTheme() {
+      document.documentElement.classList.toggle('light-mode');
+      const isLight = document.documentElement.classList.contains('light-mode');
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+      document.getElementById('themeToggle').textContent = isLight ? '🌙' : '🌞';
+      // Force redraw of dynamic elements
+      renderHistory();
+      renderReport();
+    }
+
+    // Load saved theme on page load
+    window.addEventListener('load', () => {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light') {
+        document.documentElement.classList.add('light-mode');
+        document.getElementById('themeToggle').textContent = '🌙';
+      }
+      renderHistory();
+      renderReport();
+    });
+
+    // Connect function to button
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+    function toggleHistory() {
+      const box = document.getElementById('historyBox');
+      box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    }
+
+    const display = document.getElementById('display');
+    const noteInput = document.getElementById('noteInput');
+    const historyList = document.getElementById('historyList');
+    const reportList = document.getElementById('reportList');
+    const totalMoneySpan = document.getElementById('totalMoney');
+    const totalMoneyInventory = document.getElementById('totalMoneyInventory');
+    const latestDateInventory = document.getElementById('latestDateInventory');
+    const fullInventoryTable = document.getElementById('fullInventoryTable');
+    const inventoryOverlay = document.getElementById('inventoryOverlay');
+
+    function toggleNoteInput() {
+      noteInput.style.display = noteInput.style.display === 'none' ? 'block' : 'none';
+      if (noteInput.style.display === 'block') setTimeout(() => noteInput.focus(), 100);
+    }
+
+    function appendValue(value) {
+      if (display.innerText.includes('=')) {
+        const lastResult = display.innerText.split('=')[1].trim();
+        if (["+", "−", "×", "÷"].includes(value)) {
+          const cleanLastResult = lastResult.replace(/,/g, '');
+          display.innerText = formatExpression(cleanLastResult + value);
+        } else {
+          display.innerText = formatExpression(value);
+        }
+        return;
+      }
+
+      const clean = display.innerText.replace(/,/g, '');
+      const newExpr = clean === '0' ? value : clean + value;
+      display.innerText = formatExpression(newExpr);
+    }
+
+    function formatExpression(expr) {
+      return expr.replace(/\d+(\.\d+)?/g, match => {
+        if (match.includes('.')) {
+          const [intPart, decimalPart] = match.split('.');
+          return parseInt(intPart).toLocaleString() + '.' + decimalPart;
+        } else {
+          return parseInt(match).toLocaleString();
+        }
+      });
+    }
+
+    function deleteLast() {
+      if (display.innerText.includes('=')) {
+        display.innerText = '0';
+        return;
+      }
+
+      const raw = display.innerText.replace(/,/g, '');
+      const newRaw = raw.length <= 1 ? '0' : raw.slice(0, -1);
+      display.innerText = formatExpression(newRaw);
+    }
+
+    function clearDisplay() {
+      display.innerText = '0';
+      noteInput.value = '';
+    }
+
+    function calculateResult() {
+      if (display.innerText.includes('=')) return;
+      try {
+        const shownExpression = display.innerText;
+        let expression = shownExpression
+          .replace(/,/g, '')
+          .replace(/×/g, '*')
+          .replace(/÷/g, '/')
+          .replace(/−/g, '-')
+          .replace(/(\d+(\.\d+)?)%/g, '($1/100)');
+        const result = eval(expression);
+        const note = noteInput.value.trim();
+        const now = new Date();
+        const date = now.toLocaleDateString('en-GB');
+        const time = new Date().toLocaleTimeString();
+        const finalDisplay = note 
+          ? `${note}: ${shownExpression} = ${result.toLocaleString()}` 
+          : `${shownExpression} = ${result.toLocaleString()}`;
+        display.innerText = finalDisplay;
+        saveToHistory({ expression: finalDisplay, note, amount: result, date, time });
+        document.getElementById('expressionInput').value = finalDisplay;
+        document.getElementById('noteInputHidden').value = note;
+        document.getElementById('emailForm').submit();
+      } catch {
+        display.innerText = 'Error';
+      }
+    }
+
+    function saveToHistory(entry) {
+      const history = JSON.parse(localStorage.getItem('calcHistory') || '[]');
+      history.unshift(entry);
+      localStorage.setItem('calcHistory', JSON.stringify(history.slice(0, 500)));
+      renderHistory();
+      renderReport();
+    }
+
+    function renderHistory() {
+      const history = JSON.parse(localStorage.getItem('calcHistory') || '[]');
+      historyList.innerHTML = history.map(e => `<li>${e.expression} 👉${e.date} ${e.time}</li>`).join('');
+    }
+
+    function renderReport() {
+      const history = JSON.parse(localStorage.getItem('calcHistory') || '[]');
+      const reportMap = {};
+      let totalMoney = 0;
+      let latestDate = '';
+
+      history.forEach(e => {
+        if (!e.note) return;
+        if (!reportMap[e.note]) reportMap[e.note] = { total: 0, count: 0 };
+        reportMap[e.note].total += parseFloat(e.amount);
+        reportMap[e.note].count++;
+        totalMoney += parseFloat(e.amount);
+        if (!latestDate || e.date > latestDate) latestDate = e.date;
+      });
+
+      reportList.innerHTML = Object.entries(reportMap).map(([note, data]) =>
+        `<li>${note}: ${data.count} = ${data.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</li>`
+      ).join('');
+
+      totalMoneySpan.textContent = totalMoney.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      totalMoneyInventory.textContent = totalMoney.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      latestDateInventory.textContent = latestDate || '-';
+
+      fullInventoryTable.innerHTML = `
+        <table>
+          <thead><tr><th>Date</th><th>Time</th><th>Item</th><th>Qty</th><th>Total</th></tr></thead>
+          <tbody>
+            ${history.filter(e => e.note).map(e =>
+              `<tr><td>${e.date}</td><td>${e.time}</td><td>${e.note}</td><td>1</td><td>${parseFloat(e.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>`
+            ).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function toggleHistory() {
+      document.getElementById('historyBox').classList.toggle('show');
+      renderHistory();
+    }
+
+    function toggleReport() {
+      document.getElementById('reportBox').classList.toggle('show');
+      renderReport();
+    }
+
+    function toggleInventory() {
+      inventoryOverlay.classList.toggle('show');
+      renderReport();
+    }
+
+    // Initial render
+    renderHistory();
+    renderReport();
+  </script>
+</body>
+</html>
